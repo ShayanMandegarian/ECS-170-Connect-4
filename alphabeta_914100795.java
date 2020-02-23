@@ -18,6 +18,7 @@ public class alphabeta_914100795 extends AIModule
 		public Scores()
 		{
 			myThrees = 0;
+			theirThrees = 0;
 			myWin = 0;
 			theirWin = 0;
 		}
