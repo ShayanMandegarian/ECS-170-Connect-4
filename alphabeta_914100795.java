@@ -1,11 +1,12 @@
 import java.util.*;
 
-public class minimax_914100795 extends AIModule
+public class alphabeta_914100795 extends AIModule
 {
 	int player;
 	int opponent;
-	int maxDepth = 3;
+	int maxDepth;
 	int bestMoveSeen;
+	int[] order = {3,4,2,5,1,6,0};
 
   public class Scores
 	{
@@ -17,7 +18,6 @@ public class minimax_914100795 extends AIModule
 		public Scores()
 		{
 			myThrees = 0;
-			theirThrees = 0;
 			myWin = 0;
 			theirWin = 0;
 		}
@@ -27,30 +27,34 @@ public class minimax_914100795 extends AIModule
 			return "myThrees: " + this.myThrees + ", theirThrees: " + this.theirThrees + ", myWin: " + this.myWin + ", theirWin: " + this.theirWin;
 		}
 	}
+
 	public void getNextMove(final GameStateModule game)
 	{
         player = game.getActivePlayer();
         opponent = (game.getActivePlayer() == 1?2:1);
+				maxDepth = 0;
 		//begin recursion
 		while(!terminate){
-			minimax(game, 0, player, player, opponent);
+			minimax(game, 0, player, player, opponent, Integer.MIN_VALUE, Integer.MAX_VALUE);
+
       	if(!terminate) {
 					chosenMove = bestMoveSeen;
 				}
+				maxDepth++;
 		}
 
 		if(game.canMakeMove(chosenMove))
 			game.makeMove(chosenMove);
 	}
 
-	private int minimax(final GameStateModule state, int depth, int playerID, int player, int opponent) {
+	private int minimax(final GameStateModule state, int depth, int playerID, int player, int opponent, int alpha, int beta) {
         if (terminate) {
-						if (playerID == player) {
-	            return Integer.MAX_VALUE;
-						}
-						if (playerID == opponent) {
-							return Integer.MIN_VALUE;
-						}
+					if (playerID == player) {
+            return Integer.MAX_VALUE;
+					}
+					if (playerID == opponent) {
+						return Integer.MIN_VALUE;
+					}
 				}
         if (depth == maxDepth) {
             return eval(state, playerID, player, opponent);
@@ -58,35 +62,41 @@ public class minimax_914100795 extends AIModule
         depth++;
         int value = 0;
         //max's turn
-        int bestVal = Integer.MIN_VALUE;
         if(playerID == player){
-            value = Integer.MIN_VALUE + 1;
-            for(int i = 0; i < state.getWidth(); i++){
+						for (int i: order) {
                 if(state.canMakeMove(i)) {
                     state.makeMove(i);
-                    value = Math.max(value, minimax(state, depth, opponent, player, opponent));
+                    value = minimax(state, depth, opponent, player, opponent, alpha, beta);
                     state.unMakeMove();
-                    if (value > bestVal){
-                        bestVal = value;
+                    if (value > alpha) {
+                        alpha = value;
                         if (depth == 1) { //top of recursion, make our move choice
                             bestMoveSeen = i;
                         }
                     }
-                }
+										if (beta <= alpha) {
+											break;
+                		}
+								}
             }
-            return value;
+            return alpha;
         }
 
         else { //min's turn
-            value = Integer.MAX_VALUE;
-            for(int i = 0; i < state.getWidth(); i++) {
-                if (state.canMakeMove(i)) {
+						for (int i: order) {
+                if(state.canMakeMove(i)) {
                     state.makeMove(i);
-                    value = Math.min(value, minimax(state, depth, player, player, opponent));
+                    value = minimax(state, depth, player, player, opponent, alpha, beta);
                     state.unMakeMove();
-                }
+										if (value < beta) {
+											beta = value;
+										}
+										if (beta <= alpha) {
+											break;
+                		}
+								}
             }
-            return value;
+            return beta;
         }
     }
 
@@ -102,10 +112,10 @@ public class minimax_914100795 extends AIModule
 					break;
 				}
 			}
-			if (i < 2) {
+			if (i < 3) {
 				return;
 			}
-			else if (i == 2 && state.getHeightAt(x) <= state.getHeight() - 3) {
+			else if (i == 3 && state.getHeightAt(x) <= state.getHeight() - 3) {
 				if (currColor == id) {
 					scores.myThrees += 1;
 				}
@@ -114,7 +124,7 @@ public class minimax_914100795 extends AIModule
 				}
 				return;
 			}
-			else if (i == 3) {// && state.canMakeMove(x)) {
+			else if (i == 4 && state.canMakeMove(x)) {
 				if (currColor == id) {
 					scores.myWin += 1;
 				}
@@ -395,11 +405,11 @@ public class minimax_914100795 extends AIModule
 		private int eval(final GameStateModule state, int playerID, int player, int opponent) {
 			Scores scores = new Scores();
 			for(int i = 0; i < state.getWidth(); i++) {
-				//for (int j = 0; j < state.getHeight(); j++) {
+				for (int j = 0; j < state.getHeight(); j++) {
 
 					if (state.isGameOver()) {
 						if (state.getWinner() == player) {
-							scores.myWin += 1;
+							scores.myWin += 90000;
 						}
 						else {
 							scores.theirWin += 90000;
@@ -408,16 +418,13 @@ public class minimax_914100795 extends AIModule
 					if (terminate) {
 						break;
 					}
-					checkDown(state, scores, i, state.getHeightAt(i), player);
-					checkSide(state, scores, i, state.getHeightAt(i), player);
-					checkDiagFront(state, scores, i, state.getHeightAt(i), player);
-					checkDiagBack(state, scores, i, state.getHeightAt(i), player);
+					checkDown(state, scores, i, j, player);
+					checkSide(state, scores, i, j, player);
+					checkDiagFront(state, scores, i, j, player);
+					checkDiagBack(state, scores, i, j, player);
 
-			//	}
+				}
 			}
-			//System.out.println(Arrays.toString(heights));
-			//System.out.println(scores.printScores());
-			//System.out.println((scores.myThrees - (2 * scores.theirThrees) + (10 * (scores.myWin - scores.theirWin))));
 
 			return (scores.myThrees - (2 * scores.theirThrees) + (10 * (scores.myWin - (2 * scores.theirWin))));
 		}
